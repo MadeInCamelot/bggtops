@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install dependencies
         run: npm install fast-xml-parser
@@ -24,6 +24,6 @@ jobs:
       - name: Run BGG trending sync
         env:
           SHOPIFY_STORE_DOMAIN: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
-          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
-          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          SHOPIFY_TRENDING_CLIENT_ID: ${{ secrets.SHOPIFY_TRENDING_CLIENT_ID }}
+          SHOPIFY_TRENDING_CLIENT_SECRET: ${{ secrets.SHOPIFY_TRENDING_CLIENT_SECRET }}
         run: node bgg-trending-sync.js
