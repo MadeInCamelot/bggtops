@@ -23,7 +23,8 @@ jobs:
 
       - name: Run BGG trending sync
         env:
+          BGG_API_TOKEN: ${{ secrets.BGG_API_TOKEN }}
           SHOPIFY_STORE_DOMAIN: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
-          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
-          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_TRENDING_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_TRENDING_CLIENT_SECRET }}
         run: node bgg-trending-sync.js
