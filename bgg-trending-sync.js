@@ -12,19 +12,32 @@
  * the storefront keeps showing yesterday's "Trending" list rather than an
  * empty or partial one.
  *
+ * IMPORTANT: As of July 2025, BGG requires all XML API requests to be
+ * registered and authorized. You must:
+ *   1. Register an application at https://boardgamegeek.com/applications
+ *      (approval can take a week or more)
+ *   2. Once approved, generate a Token for it on that same page
+ *   3. Set BGG_API_TOKEN below to that token
+ * Requests without a valid `Authorization: Bearer <token>` header get a 401.
+ *
  * Requires Node 18+ (native fetch) and the fast-xml-parser package:
  *   npm install fast-xml-parser
  *
  * Required env vars:
- *   SHOPIFY_STORE_DOMAIN   e.g. made-in-camelot.myshopify.com
- *   SHOPIFY_CLIENT_ID
- *   SHOPIFY_CLIENT_SECRET
+ *   BGG_API_TOKEN                 Bearer token from your registered BGG app
+ *   SHOPIFY_STORE_DOMAIN          e.g. made-in-camelot.myshopify.com
+ *   SHOPIFY_TRENDING_CLIENT_ID    Client ID for the least-privilege
+ *   SHOPIFY_TRENDING_CLIENT_SECRET   "BGG Trending Sync" app (read_products
+ *                                 only, no write_products) — deliberately
+ *                                 separate from whatever app/credentials
+ *                                 power the related-products script.
  */
 
 const { XMLParser } = require('fast-xml-parser');
 
 // ---- Config -------------------------------------------------------------
 
+const BGG_API_TOKEN = process.env.BGG_API_TOKEN;
 const SHOPIFY_STORE_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const SHOPIFY_CLIENT_ID = process.env.SHOPIFY_CLIENT_ID;
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
@@ -39,8 +52,13 @@ const TRENDING_METAFIELD_KEY = 'trending_products';
 const BGG_ID_METAFIELD_NAMESPACE = 'custom';
 const BGG_ID_METAFIELD_KEY = 'bgg_id';
 
+if (!BGG_API_TOKEN) {
+  console.error('Missing required env var: BGG_API_TOKEN (see header comment for how to get one)');
+  process.exit(1);
+}
+
 if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_CLIENT_ID || !SHOPIFY_CLIENT_SECRET) {
-  console.error('Missing required env vars: SHOPIFY_STORE_DOMAIN, SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET');
+  console.error('Missing required env vars: SHOPIFY_STORE_DOMAIN, SHOPIFY_TRENDING_CLIENT_ID, SHOPIFY_TRENDING_CLIENT_SECRET');
   process.exit(1);
 }
 
@@ -88,8 +106,17 @@ async function shopifyGraphQL(token, query, variables = {}) {
 
 async function fetchBggHotList() {
   const res = await fetch(BGG_HOT_URL, {
-    headers: { 'User-Agent': 'made-in-camelot-trending-sync/1.0' },
+    headers: {
+      'User-Agent': 'made-in-camelot-trending-sync/1.0',
+      'Authorization': `Bearer ${BGG_API_TOKEN}`,
+    },
   });
+
+  if (res.status === 401) {
+    throw new Error(
+      'BGG hot list request failed: 401 Unauthorized — check that BGG_API_TOKEN is set and your application is approved at https://boardgamegeek.com/applications'
+    );
+  }
 
   if (!res.ok) {
     throw new Error(`BGG hot list request failed: ${res.status}`);
