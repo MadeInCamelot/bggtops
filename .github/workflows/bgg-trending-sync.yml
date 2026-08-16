@@ -1,0 +1,29 @@
+name: BGG Trending Sync
+
+on:
+  schedule:
+    # Every 6 hours. BGG's hot list doesn't move fast enough to need more.
+    - cron: '0 */6 * * *'
+  workflow_dispatch: {} # lets you trigger a manual run from the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install fast-xml-parser
+
+      - name: Run BGG trending sync
+        env:
+          SHOPIFY_STORE_DOMAIN: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+        run: node bgg-trending-sync.js
